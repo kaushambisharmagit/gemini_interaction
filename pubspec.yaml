@@ -1,0 +1,22 @@
+name: gemini_interaction
+description: A Flutter app to interact with Gemini API
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.1
+  file_picker: ^6.1.1
+  image_picker: ^0.8.4+4
+  path_provider: ^2.1.1
+  permission_handler: ^11.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
