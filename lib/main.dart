@@ -64,11 +64,11 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
 
     Uri uri;
     if (_mode == "Text + Image") {
-      uri = Uri.parse("https://gemini-response-ocw6.onrender.com/text-image");
+      uri = Uri.parse("https://gemini-interaction.onrender.com/text-image");
     } else if (_mode == "Text + Audio") {
-      uri = Uri.parse("https://gemini-response-ocw6.onrender.com/text-audio");
+      uri = Uri.parse("https://gemini-interaction.onrender.com/text-audio");
     } else {
-      uri = Uri.parse("https://gemini-response-ocw6.onrender.com/audio-only");
+      uri = Uri.parse("https://gemini-interaction.onrender.com/audio-only");
     }
 
     final request = http.MultipartRequest('POST', uri);
