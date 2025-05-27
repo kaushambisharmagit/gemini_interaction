@@ -5,7 +5,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-android {
+android { 
+    compileSdk = 34
     ndkVersion = "27.0.12077973"
     namespace = "com.example.gemini_interaction"
     compileSdk = flutter.compileSdkVersion
