@@ -79,5 +79,7 @@ def read_root():
 # Fix for running inside Jupyter or Colab
 nest_asyncio.apply()
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="192.168.68.112", port=8001)
+if __name__ == "__main__":   
+    import os
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
