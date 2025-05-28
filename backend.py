@@ -23,6 +23,16 @@ model = genai.GenerativeModel("gemini-2.0-flash")
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend domain for better security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/text-image")
 async def text_image(text: str = Form(...), image: UploadFile = File(...)):
     parts = [text]
