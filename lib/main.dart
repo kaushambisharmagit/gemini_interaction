@@ -33,9 +33,27 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: _mode == "Text + Image" ? FileType.image : FileType.audio,
     );
+
     if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      final allowedImageExts = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+      final allowedAudioExts = ['wav', 'mp3', 'm4a', 'ogg'];
+
+      final isValid = _mode == "Text + Image"
+          ? allowedImageExts.contains(extension)
+          : allowedAudioExts.contains(extension);
+
+      if (!isValid) {
+        setState(() {
+          _response = "Unsupported file format: .$extension";
+        });
+        return;
+      }
+
       setState(() {
-        _file = File(result.files.single.path!);
+        _file = file;
       });
     }
   }
@@ -44,8 +62,20 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      final allowedImageExts = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+
+      if (!allowedImageExts.contains(extension)) {
+        setState(() {
+          _response = "Unsupported image format: .$extension";
+        });
+        return;
+      }
+
       setState(() {
-        _file = File(pickedFile.path);
+        _file = file;
       });
     }
   }
@@ -53,76 +83,88 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
   Future<void> recordAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      final allowedAudioExts = ['wav', 'mp3', 'm4a', 'ogg'];
+
+      if (!allowedAudioExts.contains(extension)) {
+        setState(() {
+          _response = "Unsupported audio format: .$extension";
+        });
+        return;
+      }
+
       setState(() {
-        _file = File(result.files.single.path!);
+        _file = file;
       });
     }
   }
 
-Future<void> sendRequest() async {
-  if (_file == null && _mode != "Audio Only") return;
+  Future<void> sendRequest() async {
+    if (_file == null && _mode != "Audio Only") return;
 
-  if (kIsWeb) {
-    setState(() {
-      _response = "File upload is not supported on web.";
-    });
-    return;
-  }
-
-  Uri uri;
-  if (_mode == "Text + Image") {
-    uri = Uri.parse("https://gemini-interaction.onrender.com/text-image");
-  } else if (_mode == "Text + Audio") {
-    uri = Uri.parse("https://gemini-interaction.onrender.com/text-audio");
-  } else {
-    uri = Uri.parse("https://gemini-interaction.onrender.com/audio-only");
-  }
-
-  final request = http.MultipartRequest('POST', uri);
-  if (_mode != "Audio Only") {
-    request.fields['text'] = _textController.text;
-  }
-
-  if (_file != null) {
-    try {
-      request.files.add(await http.MultipartFile.fromPath(
-        _mode == "Text + Image" ? 'image' : 'audio',
-        _file!.path,
-      ));
-    } catch (e) {
+    if (kIsWeb) {
       setState(() {
-        _response = "Failed to attach file: $e";
+        _response = "File upload is not supported on web.";
       });
       return;
     }
-  }
 
-  try {
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
+    Uri uri;
+    if (_mode == "Text + Image") {
+      uri = Uri.parse("https://gemini-interaction.onrender.com/text-image");
+    } else if (_mode == "Text + Audio") {
+      uri = Uri.parse("https://gemini-interaction.onrender.com/text-audio");
+    } else {
+      uri = Uri.parse("https://gemini-interaction.onrender.com/audio-only");
+    }
 
-    if (response.statusCode == 200) {
+    final request = http.MultipartRequest('POST', uri);
+    if (_mode != "Audio Only") {
+      request.fields['text'] = _textController.text;
+    }
+
+    if (_file != null) {
       try {
-        final decoded = json.decode(responseBody);
-        setState(() {
-          _response = decoded['response'] ?? "No response field in JSON.";
-        });
+        request.files.add(await http.MultipartFile.fromPath(
+          _mode == "Text + Image" ? 'image' : 'audio',
+          _file!.path,
+        ));
       } catch (e) {
         setState(() {
-          _response = "Invalid JSON response: $responseBody";
+          _response = "Failed to attach file: $e";
+        });
+        return;
+      }
+    }
+
+    try {
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        try {
+          final decoded = json.decode(responseBody);
+          setState(() {
+            _response = decoded['response'] ?? "No response field in JSON.";
+          });
+        } catch (e) {
+          setState(() {
+            _response = "Invalid JSON response: $responseBody";
+          });
+        }
+      } else {
+        setState(() {
+          _response = "Server error ${response.statusCode}: $responseBody";
         });
       }
-    } else {
+    } catch (e) {
       setState(() {
-        _response = "Server error ${response.statusCode}: $responseBody";
+        _response = "Request failed: $e";
       });
     }
-  } catch (e) {
-    setState(() {
-      _response = "Request failed: $e";
-    });
   }
-}
 
   @override
   Widget build(BuildContext context) {
