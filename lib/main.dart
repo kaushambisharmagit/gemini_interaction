@@ -6,19 +6,23 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
-void main() => runApp(GeminiApp());
+void main() => runApp(const GeminiApp());
 
 class GeminiApp extends StatelessWidget {
+  const GeminiApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Gemini Interaction',
-      home: GeminiInteraction(),
+      home: const GeminiInteraction(),
     );
   }
 }
 
 class GeminiInteraction extends StatefulWidget {
+  const GeminiInteraction({Key? key}) : super(key: key);
+
   @override
   _GeminiInteractionState createState() => _GeminiInteractionState();
 }
@@ -185,7 +189,7 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Gemini Interaction")),
+      appBar: AppBar(title: const Text("Gemini Interaction")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -203,9 +207,9 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
             if (_mode != "Audio Only")
               TextField(
                 controller: _textController,
-                decoration: InputDecoration(labelText: "Enter text"),
+                decoration: const InputDecoration(labelText: "Enter text"),
               ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: pickFile,
               child: Text(_mode == "Text + Image" ? "Pick Image" : "Pick Audio"),
@@ -213,26 +217,26 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
             if (_mode == "Text + Image")
               ElevatedButton(
                 onPressed: captureImage,
-                child: Text("Capture Image"),
+                child: const Text("Capture Image"),
               ),
             if (_mode != "Text + Image")
               ElevatedButton(
                 onPressed: recordAudio,
-                child: Text("Record Audio"),
+                child: const Text("Record Audio"),
               ),
             if (_fileName != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Text("Selected file: $_fileName"),
               ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: sendRequest,
-              child: _isLoading ? CircularProgressIndicator() : Text("Send to Gemini"),
+              child: _isLoading ? const CircularProgressIndicator() : const Text("Send to Gemini"),
             ),
-            SizedBox(height: 20),
-            Text("Response:", style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+            const SizedBox(height: 20),
+            const Text("Response:", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
             Expanded(child: SingleChildScrollView(child: Text(_response))),
           ],
         ),
