@@ -28,6 +28,8 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
   String _response = "";
   final TextEditingController _textController = TextEditingController();
   String _mode = "Text + Image";
+  bool _isLoading = false;
+  String? _fileName;
 
   Future<void> pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -54,6 +56,8 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
 
       setState(() {
         _file = file;
+        _fileName = file.path.split('/').last;
+        _response = ""; // Clear previous response
       });
     }
   }
@@ -76,6 +80,8 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
 
       setState(() {
         _file = file;
+        _fileName = file.path.split('/').last;
+        _response = ""; // Clear previous response
       });
     }
   }
@@ -97,6 +103,8 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
 
       setState(() {
         _file = file;
+        _fileName = file.path.split('/').last;
+        _response = ""; // Clear previous response
       });
     }
   }
@@ -139,6 +147,10 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
       }
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
@@ -162,6 +174,10 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     } catch (e) {
       setState(() {
         _response = "Request failed: $e";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -204,10 +220,15 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
                 onPressed: recordAudio,
                 child: Text("Record Audio"),
               ),
+            if (_fileName != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text("Selected file: $_fileName"),
+              ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: sendRequest,
-              child: Text("Send to Gemini"),
+              child: _isLoading ? CircularProgressIndicator() : Text("Send to Gemini"),
             ),
             SizedBox(height: 20),
             Text("Response:", style: TextStyle(fontWeight: FontWeight.bold)),
