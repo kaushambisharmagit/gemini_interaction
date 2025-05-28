@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 
 void main() => runApp(const GeminiApp());
 
@@ -54,53 +53,6 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
       if (!isValid) {
         setState(() {
           _response = "Unsupported file format: .$extension";
-        });
-        return;
-      }
-
-      setState(() {
-        _file = file;
-        _fileName = file.path.split('/').last;
-        _response = ""; // Clear previous response
-      });
-    }
-  }
-
-  Future<void> captureImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      final extension = file.path.split('.').last.toLowerCase();
-
-      final allowedImageExts = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
-
-      if (!allowedImageExts.contains(extension)) {
-        setState(() {
-          _response = "Unsupported image format: .$extension";
-        });
-        return;
-      }
-
-      setState(() {
-        _file = file;
-        _fileName = file.path.split('/').last;
-        _response = ""; // Clear previous response
-      });
-    }
-  }
-
-  Future<void> recordAudio() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final extension = file.path.split('.').last.toLowerCase();
-
-      final allowedAudioExts = ['wav', 'mp3', 'm4a', 'ogg'];
-
-      if (!allowedAudioExts.contains(extension)) {
-        setState(() {
-          _response = "Unsupported audio format: .$extension";
         });
         return;
       }
@@ -214,16 +166,6 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
               onPressed: pickFile,
               child: Text(_mode == "Text + Image" ? "Pick Image" : "Pick Audio"),
             ),
-            if (_mode == "Text + Image")
-              ElevatedButton(
-                onPressed: captureImage,
-                child: const Text("Capture Image"),
-              ),
-            if (_mode != "Text + Image")
-              ElevatedButton(
-                onPressed: recordAudio,
-                child: const Text("Record Audio"),
-              ),
             if (_fileName != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),

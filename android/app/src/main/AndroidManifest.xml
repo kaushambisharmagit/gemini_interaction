@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="gemini_interaction"
+        android:label="gemini_interaction_fixed"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

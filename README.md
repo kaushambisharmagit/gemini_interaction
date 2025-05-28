@@ -1,4 +1,4 @@
-# gemini_interaction
+# gemini_interaction_fixed
 
 A new Flutter project.
 

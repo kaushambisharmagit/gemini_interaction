@@ -28,7 +28,7 @@ app.add_middleware(
 
 # Supported MIME types for images and audio
 SUPPORTED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"]
-SUPPORTED_AUDIO_MIME_TYPES = ["audio/wav", "audio/mpeg", "audio/mp4", "audio/ogg"]
+SUPPORTED_AUDIO_MIME_TYPES = ["audio/wav", "audio/x-wav", "audio/mpeg", "audio/mp4", "audio/ogg"]
 
 @app.post("/text-image")
 async def text_image(text: str = Form(...), image: UploadFile = File(...)):
