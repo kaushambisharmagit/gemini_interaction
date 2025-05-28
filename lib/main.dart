@@ -33,9 +33,27 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: _mode == "Text + Image" ? FileType.image : FileType.audio,
     );
+
     if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      final allowedImageExts = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+      final allowedAudioExts = ['wav', 'mp3', 'm4a', 'ogg'];
+
+      final isValid = _mode == "Text + Image"
+          ? allowedImageExts.contains(extension)
+          : allowedAudioExts.contains(extension);
+
+      if (!isValid) {
+        setState(() {
+          _response = "Unsupported file format: .$extension";
+        });
+        return;
+      }
+
       setState(() {
-        _file = File(result.files.single.path!);
+        _file = file;
       });
     }
   }
@@ -44,8 +62,20 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      final allowedImageExts = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+
+      if (!allowedImageExts.contains(extension)) {
+        setState(() {
+          _response = "Unsupported image format: .$extension";
+        });
+        return;
+      }
+
       setState(() {
-        _file = File(pickedFile.path);
+        _file = file;
       });
     }
   }
@@ -53,8 +83,20 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
   Future<void> recordAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      final allowedAudioExts = ['wav', 'mp3', 'm4a', 'ogg'];
+
+      if (!allowedAudioExts.contains(extension)) {
+        setState(() {
+          _response = "Unsupported audio format: .$extension";
+        });
+        return;
+      }
+
       setState(() {
-        _file = File(result.files.single.path!);
+        _file = file;
       });
     }
   }
@@ -101,9 +143,22 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
-      setState(() {
-        _response = json.decode(responseBody)['response'] ?? "No response";
-      });
+      if (response.statusCode == 200) {
+        try {
+          final decoded = json.decode(responseBody);
+          setState(() {
+            _response = decoded['response'] ?? "No response field in JSON.";
+          });
+        } catch (e) {
+          setState(() {
+            _response = "Invalid JSON response: $responseBody";
+          });
+        }
+      } else {
+        setState(() {
+          _response = "Server error ${response.statusCode}: $responseBody";
+        });
+      }
     } catch (e) {
       setState(() {
         _response = "Request failed: $e";
