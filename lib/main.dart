@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -49,7 +50,6 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     }
   }
 
-  // ✅ Updated: Use file picker instead of microphone
   Future<void> recordAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result != null && result.files.single.path != null) {
@@ -61,6 +61,13 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
 
   Future<void> sendRequest() async {
     if (_file == null && _mode != "Audio Only") return;
+
+    if (kIsWeb) {
+      setState(() {
+        _response = "File upload is not supported on web.";
+      });
+      return;
+    }
 
     Uri uri;
     if (_mode == "Text + Image") {
@@ -75,19 +82,33 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     if (_mode != "Audio Only") {
       request.fields['text'] = _textController.text;
     }
+
     if (_file != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-        _mode == "Text + Image" ? 'image' : 'audio',
-        _file!.path,
-      ));
+      try {
+        request.files.add(await http.MultipartFile.fromPath(
+          _mode == "Text + Image" ? 'image' : 'audio',
+          _file!.path,
+        ));
+      } catch (e) {
+        setState(() {
+          _response = "Failed to attach file: $e";
+        });
+        return;
+      }
     }
 
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
+    try {
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
 
-    setState(() {
-      _response = json.decode(responseBody)['response'] ?? "No response";
-    });
+      setState(() {
+        _response = json.decode(responseBody)['response'] ?? "No response";
+      });
+    } catch (e) {
+      setState(() {
+        _response = "Request failed: $e";
+      });
+    }
   }
 
   @override
