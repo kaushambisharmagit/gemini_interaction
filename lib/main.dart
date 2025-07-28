@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_tts/flutter_tts.dart';
 
 void main() => runApp(const GeminiApp());
 
@@ -33,6 +34,57 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
   String _mode = "Text + Image";
   bool _isLoading = false;
   String? _fileName;
+  bool _isSpeaking = false;
+
+  final FlutterTts _flutterTts = FlutterTts();
+
+  final List<String> _imagePrompts = [
+    "What is shown in this image?",
+    "Describe the scene in detail.",
+    "List all objects you can identify.",
+    "What emotions are visible in the image?",
+    "Is this image real or AI-generated?",
+    "What is the setting or location?",
+    "What is the person doing in this image?",
+    "What time of day does this image represent?",
+    "What style or art form is this image?",
+    "Summarize this image in one sentence."
+  ];
+
+  final List<String> _audioPrompts = [
+    "Transcribe the audio.",
+    "Summarize what is being said.",
+    "What is the speaker's emotion?",
+    "Is this a conversation or a monologue?",
+    "What language is being spoken?",
+    "What is the background noise?",
+    "Who might be speaking in this audio?",
+    "Is this a song or a speech?",
+    "What is the main topic of the audio?",
+    "What is the tone of the speaker?",
+    "Translate the audio to English."
+  ];
+
+  List<String> _currentPrompts = [];
+  String? _selectedPrompt;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPrompts = _imagePrompts;
+
+    _flutterTts.setCompletionHandler(() {
+      setState(() {
+        _isSpeaking = false;
+      });
+    });
+
+    _flutterTts.setCancelHandler(() {
+      setState(() {
+        _isSpeaking = false;
+      });
+    });
+  }
 
   Future<void> pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -60,13 +112,19 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
       setState(() {
         _file = file;
         _fileName = file.path.split('/').last;
-        _response = ""; // Clear previous response
+        _response = "";
       });
     }
   }
 
   Future<void> sendRequest() async {
     if (_file == null && _mode != "Audio Only") return;
+
+    await _flutterTts.stop();
+    setState(() {
+      _isSpeaking = false;
+      _response = "";
+    });
 
     if (kIsWeb) {
       setState(() {
@@ -117,6 +175,7 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
           setState(() {
             _response = decoded['response'] ?? "No response field in JSON.";
           });
+          await _speakResponse(); // auto-play response
         } catch (e) {
           setState(() {
             _response = "Invalid JSON response: $responseBody";
@@ -138,6 +197,18 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
     }
   }
 
+  Future<void> _speakResponse() async {
+    if (_response.isNotEmpty && !_isSpeaking) {
+      setState(() {
+        _isSpeaking = true;
+      });
+
+      await _flutterTts.setLanguage("en-US");
+      await _flutterTts.setPitch(1.0);
+      await _flutterTts.speak(_response);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,14 +225,56 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
                         child: Text(mode),
                       ))
                   .toList(),
-              onChanged: (value) => setState(() => _mode = value!),
+              onChanged: (value) async {
+                await _flutterTts.stop(); // stop any current speech
+                setState(() {
+                  _isSpeaking = false;
+                  _response = ""; // clear response
+                  _mode = value!;
+                  _selectedPrompt = null;
+                  _textController.clear();
+
+                  if (_mode == "Text + Image") {
+                    _currentPrompts = _imagePrompts;
+                  } else if (_mode == "Text + Audio") {
+                    _currentPrompts = _audioPrompts;
+                  } else {
+                    _currentPrompts = [];
+                  }
+                });
+              },
             ),
-            if (_mode != "Audio Only")
-              TextField(
-                controller: _textController,
-                decoration: const InputDecoration(labelText: "Enter text"),
+            if (_mode != "Audio Only") ...[
+              Stack(
+                alignment: Alignment.centerRight,
+                children: [
+                  TextField(
+                    controller: _textController,
+                    decoration: const InputDecoration(
+                      labelText: "Enter prompt or choose suggestion",
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onSelected: (value) {
+                      setState(() {
+                        _textController.text = value;
+                        _selectedPrompt = value;
+                      });
+                    },
+                    itemBuilder: (context) {
+                      return _currentPrompts.map((prompt) {
+                        return PopupMenuItem<String>(
+                          value: prompt,
+                          child: Text(prompt),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ],
               ),
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
+            ],
             ElevatedButton(
               onPressed: pickFile,
               child: Text(_mode == "Text + Image" ? "Pick Image" : "Pick Audio"),
@@ -173,13 +286,28 @@ class _GeminiInteractionState extends State<GeminiInteraction> {
               ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: sendRequest,
-              child: _isLoading ? const CircularProgressIndicator() : const Text("Send to Gemini"),
+              onPressed: _isLoading ? null : sendRequest,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text("Send to Gemini"),
             ),
             const SizedBox(height: 20),
-            const Text("Response:", style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text("Response:", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Expanded(child: SingleChildScrollView(child: Text(_response))),
+            if (_response.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: ElevatedButton.icon(
+                  onPressed: _isSpeaking ? null : _speakResponse,
+                  icon: const Icon(Icons.volume_up),
+                  label: Text(_isSpeaking ? "Speaking..." : "Play Response"),
+                ),
+              ),
           ],
         ),
       ),
