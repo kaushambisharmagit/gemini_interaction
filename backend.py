@@ -9,7 +9,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 
 # Configure your Gemini API key
-genai.configure(api_key="AIzaSyCI1QuOx2zZebLGjKtIJjPIVIrqTzp2L5w")
+genai.configure(api_key="AIzaSyATPl3zRyQyTaFCqduqhfhoiJIcrg9jrtc")
 
 # Load the Gemini multimodal model
 model = genai.GenerativeModel("gemini-2.0-flash")
